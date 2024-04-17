@@ -2,27 +2,24 @@ version: '3.7'
 
 x-labels:
   labels: &default-label
-    mssql:
+    oracle:
 
 services:
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2019-latest
+  ## https://container-registry.oracle.com/ords/ocr/ba/database/free
+  oracle:
+    image: container-registry.oracle.com/database/free:23.3.0.0
     labels: *default-label
     restart: always
     ports: 
-      - "1433:1433"
+      - "1521:1521"
     volumes:
-      - mssql:/var/opt/mssql
+      - oracle:/opt/oracle/oradata
     env_file:
       - .env
     environment:
-      ## Full list:
-      ## https://docs.microsoft.com/en-us/sql/linux/sql-server-linux-configure-environment-variables
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${SA_PWD}
       - TZ=Asia/Taipei
-      - MSSQL_PID=Developer
-      - MSSQL_AGENT_ENABLED=True
+      - ORACLE_PWD=${SYS_PWD}
+      - ORACLE_CHARACTERSET=AL32UTF8
 
   backup:
     build: ./volume-backup
@@ -31,10 +28,10 @@ services:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - mssql:/volume:ro
+      - oracle:/volume:ro
       - backup:/backup
     environment:
-      - BACKUP_LABEL=mssql
+      - BACKUP_LABEL=oracle
     command: ./backup.sh
     network_mode: none
 
@@ -45,18 +42,18 @@ services:
   #     - .env
   #   volumes:
   #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - mssql:/volume
+  #     - oracle:/volume 
   #     - backup:/backup:ro
   #   environment:
-  #     - BACKUP_LABEL=mssql
+  #     - BACKUP_LABEL=oracle
   #   command: ./restore.sh
   #   network_mode: none
 
 volumes:
-  mssql:
+  oracle:
     labels: *default-label
     ## If you encounter different volume names during backup/restore, please declare the name here.
-    # name: docker-mssql-server_mssql
+    # name: docker-oracle-database_oracle
   backup:
     driver_opts:
       type: cifs
